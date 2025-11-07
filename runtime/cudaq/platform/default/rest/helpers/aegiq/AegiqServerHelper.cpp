@@ -86,8 +86,8 @@ void AegiqServerHelper::initialize(BackendConfig config) {
 
   /// @todo Decide if/how default qpu should be set
   backendConfig["qpu"] = getValueOrDefault(config, "qpu", "Artemis");
-
-  backendConfig["api_key"] = getEnvVar("AEGIQ_API_KEY", 0, true);
+  /// @todo Switch required to true before finalising
+  backendConfig["api_key"] = getEnvVar("AEGIQ_API_KEY", "0", false);
 
   // Set shots if provided
   if (config.find("shots") != config.end())
