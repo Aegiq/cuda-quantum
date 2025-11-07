@@ -38,7 +38,8 @@ public:
   RestHeaders getHeaders() override;
 
   /// @brief Generates required jobs from a vector of jobs
-  ServerJobPayload createJob(std::vector<KernelExecution> &circuitCodes) override;
+  ServerJobPayload
+  createJob(std::vector<KernelExecution> &circuitCodes) override;
 
   /// @brief Extract the job id from the post response.
   std::string extractJobId(ServerMessage &postResponse) override;
@@ -72,7 +73,6 @@ private:
                                 const std::string &key,
                                 const std::string &defaultValue) const;
 };
-                    
 
 /// @todo add any additional configuration required here.
 // Initialize backend from the provided configuration.
@@ -83,7 +83,7 @@ void AegiqServerHelper::initialize(BackendConfig config) {
 
   backendConfig["url"] = getValueOrDefault(config, "url", DEFAULT_URL);
   backendConfig["version"] = DEFAULT_VERSION;
-  
+
   /// @todo Decide if/how default qpu should be set
   backendConfig["qpu"] = getValueOrDefault(config, "qpu", "Artemis");
 
@@ -108,20 +108,23 @@ RestHeaders AegiqServerHelper::getHeaders() {
 
 /// @todo Figure out how the job should be build.
 // Generate required jobs from a list of jobs
-ServerJobPayload AegiqServerHelper::createJob(std::vector<KernelExecution> &circuitCodes) {
+ServerJobPayload
+AegiqServerHelper::createJob(std::vector<KernelExecution> &circuitCodes) {
   std::vector<ServerMessage> jobs;
   for (auto &circuitCode : circuitCodes) {
     ServerMessage job;
     job["qpu"] = backendConfig["qpu"];
     job["name"] = circuitCode.name;
-    job["lightworks_version"] = "0.0.0"; // This is not important here so just get to be generic
+    // Version is not important here so just get to be generic
+    job["lightworks_version"] = "0.0.0";
     job["n_samples"] = shots;
     // Below this line need to figure out how these would be defined.
     job["input"] = NULL;
     job["min_direction"] = NULL;
     job["direction_implementation"] = NULL;
     job["unitary"] = NULL;
-    job["circuit_spec"] = circuitCode.code; // Does this make sense? Will need to be converted to correct format
+    job["circuit_spec"] = circuitCode.code; // Does this make sense? Will need
+                                            // to be converted to correct format
     job["job_data"] = NULL;
 
     jobs.push_back(job);
@@ -133,21 +136,23 @@ ServerJobPayload AegiqServerHelper::createJob(std::vector<KernelExecution> &circ
   return std::make_tuple(backendConfig["url"] + path, headers, jobs);
 }
 
-/// @todo I believe the ID is returned in the response header, how to deal with this?
-// Extracts the job id from the submitted response 
+/// @todo I believe the ID is returned in the response header, how to deal with
+/// this?
+// Extracts the job id from the submitted response
 std::string AegiqServerHelper::extractJobId(ServerMessage &postResponse) {
   if (!postResponse.contains("X-Job-Id"))
     return "";
   return postResponse.at("X-Job-Id");
 }
 
-// Construct the tracking URL based on the job id. 
+// Construct the tracking URL based on the job id.
 std::string AegiqServerHelper::constructGetJobPath(std::string &jobId) {
   return backendConfig["url"] + "/jobs/" + jobId;
 }
 
 // Construct the tracking URL from the job submission response.
-std::string AegiqServerHelper::constructGetJobPath(ServerMessage &postResponse) {
+std::string
+AegiqServerHelper::constructGetJobPath(ServerMessage &postResponse) {
   std::string job_id = extractJobId(postResponse);
   return constructGetJobPath(job_id);
 }
@@ -157,17 +162,20 @@ bool AegiqServerHelper::jobIsDone(ServerMessage &getJobResponse) {
   if (!getJobResponse.contains("jobStatus"))
     return false;
   /// @todo move this somewhere else - it doesn't need to be defined each time!
-  std::unordered_set<std::string> complete = {"Completed", "Failed", "Cancelled", "TimedOut"};
+  std::unordered_set<std::string> complete = {"Completed", "Failed",
+                                              "Cancelled", "TimedOut"};
 
   std::string status = getJobResponse["jobStatus"];
   return complete.find(status) != complete.end();
 }
 
-/// @todo Implement the required processing for this. 
-/// Note: if seems to currently assume results are posted to the same location as is used for status checking.
+/// @todo Implement the required processing for this.
+/// Note: if seems to currently assume results are posted to the same location
+/// as is used for status checking.
 // Gets results from the job and then processes into the required format
-cudaq::sample_result AegiqServerHelper::processResults(ServerMessage &getJobResponse,
-                                                       std::string &jobId) {
+cudaq::sample_result
+AegiqServerHelper::processResults(ServerMessage &getJobResponse,
+                                  std::string &jobId) {
   CUDAQ_INFO("Processing results: {}", getJobResponse.dump());
 
   // Extract measurement results from the response
@@ -189,8 +197,8 @@ cudaq::sample_result AegiqServerHelper::processResults(ServerMessage &getJobResp
 
 // Helper method to retrieve an environment variable
 std::string AegiqServerHelper::getEnvVar(const std::string &key,
-                                              const std::string &defaultVal,
-                                              const bool isRequired) const {
+                                         const std::string &defaultVal,
+                                         const bool isRequired) const {
   const char *env_var = std::getenv(key.c_str());
   if (env_var == nullptr) {
     if (isRequired)
@@ -203,9 +211,10 @@ std::string AegiqServerHelper::getEnvVar(const std::string &key,
 }
 
 // Helper function to get a value from config or return a default
-std::string AegiqServerHelper::getValueOrDefault(
-    const BackendConfig &config, const std::string &key,
-    const std::string &defaultValue) const {
+std::string
+AegiqServerHelper::getValueOrDefault(const BackendConfig &config,
+                                     const std::string &key,
+                                     const std::string &defaultValue) const {
   auto it = config.find(key);
   return (it != config.end()) ? it->second : defaultValue;
 }
