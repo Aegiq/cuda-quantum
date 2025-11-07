@@ -15,6 +15,7 @@
 #include <fstream>
 #include <map>
 #include <thread>
+#include <unordered_set>
 
 using json = nlohmann::json;
 
@@ -39,19 +40,19 @@ public:
   /// @brief Generates required jobs from a vector of jobs
   ServerJobPayload createJob(std::vector<KernelExecution> &circuitCodes) override;
 
-  /// @brief Example implementation of job ID tracking.
+  /// @brief Extract the job id from the post response.
   std::string extractJobId(ServerMessage &postResponse) override;
 
-  /// @brief Example implementation of job ID tracking.
-  std::string constructGetJobPath(ServerMessage &postResponse) override;
-
-  /// @brief Track job based on the ID.
+  /// @brief Generates the job tracking URL from the job .id
   std::string constructGetJobPath(std::string &jobId) override;
 
-  /// @brief Example implementation of job status checking.
+  /// @brief Extract the job tracking URL from the post response.
+  std::string constructGetJobPath(ServerMessage &postResponse) override;
+
+  /// @brief Checks if job is completed.
   bool jobIsDone(ServerMessage &getJobResponse) override;
 
-  /// @brief Proccess returned results and gets them in to the required format
+  /// @brief Proccess returned results and convert them to the required format
   cudaq::sample_result processResults(ServerMessage &getJobResponse,
                                       std::string &jobId) override;
 
@@ -73,8 +74,8 @@ private:
 };
                     
 
-
-/// @brief Example implementation of backend initialization.
+/// @todo add any additional configuration required here.
+// Initialize backend from the provided configuration.
 void AegiqServerHelper::initialize(BackendConfig config) {
   CUDAQ_INFO("Initializing Provider Name Backend");
 
@@ -93,7 +94,7 @@ void AegiqServerHelper::initialize(BackendConfig config) {
     this->setShots(std::stoul(config["shots"]));
 }
 
-/// @brief Define required headers.
+// Generate the headers for a job.
 RestHeaders AegiqServerHelper::getHeaders() {
   RestHeaders headers;
   headers["Content-Type"] = "application/json";
@@ -105,7 +106,8 @@ RestHeaders AegiqServerHelper::getHeaders() {
   return headers;
 }
 
-/// Generate required jobs from a list of jobs
+/// @todo Figure out how the job should be build.
+// Generate required jobs from a list of jobs
 ServerJobPayload AegiqServerHelper::createJob(std::vector<KernelExecution> &circuitCodes) {
   std::vector<ServerMessage> jobs;
   for (auto &circuitCode : circuitCodes) {
@@ -131,38 +133,39 @@ ServerJobPayload AegiqServerHelper::createJob(std::vector<KernelExecution> &circ
   return std::make_tuple(backendConfig["url"] + path, headers, jobs);
 }
 
-/// @brief Example implementation of job ID tracking.
+/// @todo I believe the ID is returned in the response header, how to deal with this?
+// Extracts the job id from the submitted response 
 std::string AegiqServerHelper::extractJobId(ServerMessage &postResponse) {
   if (!postResponse.contains("X-Job-Id"))
     return "";
-
   return postResponse.at("X-Job-Id");
 }
 
-/// @brief Example implementation of job ID tracking.
-std::string AegiqServerHelper::constructGetJobPath(ServerMessage &postResponse) {
-  return extractJobId(postResponse);
-}
-
-/// @brief Track job based on the ID.
+// Construct the tracking URL based on the job id. 
 std::string AegiqServerHelper::constructGetJobPath(std::string &jobId) {
   return backendConfig["url"] + "/jobs/" + jobId;
 }
 
-/// @brief Example implementation of job status checking.
-bool AegiqServerHelper::jobIsDone(ServerMessage &getJobResponse) {
-  if (!getJobResponse.contains("status"))
-    return false;
-
-  std::string status = getJobResponse["status"];
-  return status == "COMPLETED" || status == "FAILED";
+// Construct the tracking URL from the job submission response.
+std::string AegiqServerHelper::constructGetJobPath(ServerMessage &postResponse) {
+  std::string job_id = extractJobId(postResponse);
+  return constructGetJobPath(job_id);
 }
 
-/// @brief Example implementation of result processing.
-///
-/// The raw results from quantum hardware often need post-processing (bit
-/// reordering, normalization, etc.) to match CUDA-Q's expectations.
-/// This is the place to do that.
+// Checks whether a job is completed yet and returns.
+bool AegiqServerHelper::jobIsDone(ServerMessage &getJobResponse) {
+  if (!getJobResponse.contains("jobStatus"))
+    return false;
+  /// @todo move this somewhere else - it doesn't need to be defined each time!
+  std::unordered_set<std::string> complete = {"Completed", "Failed", "Cancelled", "TimedOut"};
+
+  std::string status = getJobResponse["jobStatus"];
+  return complete.find(status) != complete.end();
+}
+
+/// @todo Implement the required processing for this. 
+/// Note: if seems to currently assume results are posted to the same location as is used for status checking.
+// Gets results from the job and then processes into the required format
 cudaq::sample_result AegiqServerHelper::processResults(ServerMessage &getJobResponse,
                                                        std::string &jobId) {
   CUDAQ_INFO("Processing results: {}", getJobResponse.dump());
