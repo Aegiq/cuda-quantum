@@ -107,7 +107,7 @@ RestHeaders AegiqServerHelper::getHeaders() {
   return headers;
 }
 
-/// TODO: Figure out how the job should be build.
+/// TODO: Figure out how the job should be built.
 // Generate required jobs from a list of jobs
 ServerJobPayload
 AegiqServerHelper::createJob(std::vector<KernelExecution> &circuitCodes) {
