@@ -74,7 +74,8 @@ private:
                                 const std::string &defaultValue) const;
 };
 
-/// @todo add any additional configuration required here.
+/// TODO: add any additional configuration required here.
+/// TODO: figure out how to deal with required web certificate
 // Initialize backend from the provided configuration.
 void AegiqServerHelper::initialize(BackendConfig config) {
   CUDAQ_INFO("Initializing Provider Name Backend");
@@ -84,9 +85,9 @@ void AegiqServerHelper::initialize(BackendConfig config) {
   backendConfig["url"] = getValueOrDefault(config, "url", DEFAULT_URL);
   backendConfig["version"] = DEFAULT_VERSION;
 
-  /// @todo Decide if/how default qpu should be set
+  /// TODO: Decide if/how default qpu should be set
   backendConfig["qpu"] = getValueOrDefault(config, "qpu", "Artemis");
-  /// @todo Switch required to true before finalising
+  /// TODO: Switch required to true before finalising
   backendConfig["api_key"] = getEnvVar("AEGIQ_API_KEY", "0", false);
 
   // Set shots if provided
@@ -106,7 +107,7 @@ RestHeaders AegiqServerHelper::getHeaders() {
   return headers;
 }
 
-/// @todo Figure out how the job should be build.
+/// TODO: Figure out how the job should be build.
 // Generate required jobs from a list of jobs
 ServerJobPayload
 AegiqServerHelper::createJob(std::vector<KernelExecution> &circuitCodes) {
@@ -136,7 +137,7 @@ AegiqServerHelper::createJob(std::vector<KernelExecution> &circuitCodes) {
   return std::make_tuple(backendConfig["url"] + path, headers, jobs);
 }
 
-/// @todo I believe the ID is returned in the response header, how to deal with
+/// TODO: I believe the ID is returned in the response header, how to deal with
 /// this?
 // Extracts the job id from the submitted response
 std::string AegiqServerHelper::extractJobId(ServerMessage &postResponse) {
@@ -161,7 +162,7 @@ AegiqServerHelper::constructGetJobPath(ServerMessage &postResponse) {
 bool AegiqServerHelper::jobIsDone(ServerMessage &getJobResponse) {
   if (!getJobResponse.contains("jobStatus"))
     return false;
-  /// @todo move this somewhere else - it doesn't need to be defined each time!
+  /// TODO: move this somewhere else - it doesn't need to be defined each time!
   std::unordered_set<std::string> complete = {"Completed", "Failed",
                                               "Cancelled", "TimedOut"};
 
@@ -169,7 +170,7 @@ bool AegiqServerHelper::jobIsDone(ServerMessage &getJobResponse) {
   return complete.find(status) != complete.end();
 }
 
-/// @todo Implement the required processing for this.
+/// TODO: Implement the required processing for this.
 /// Note: if seems to currently assume results are posted to the same location
 /// as is used for status checking.
 // Gets results from the job and then processes into the required format
