@@ -56,6 +56,9 @@ public:
   /// @brief Extract the job results URL from the post response.
   std::string constructGetResultsPath(ServerMessage &postResponse);
 
+  /// @brief Retrieves the results of a job using the provided path.
+  ServerMessage getResults(std::string &resultsGetPath);
+
   /// @brief Checks if job is completed.
   bool jobIsDone(ServerMessage &getJobResponse) override;
 
@@ -70,6 +73,9 @@ public:
   }
 
 private:
+  /// @brief RestClient used for HTTP requests.
+  RestClient client;
+
   /// @brief Helper method to retrieve the value of an environment variable.
   std::string getEnvVar(const std::string &key, const std::string &defaultVal,
                         const bool isRequired) const;
@@ -187,19 +193,26 @@ bool AegiqServerHelper::jobIsDone(ServerMessage &getJobResponse) {
   return complete.find(status) != complete.end();
 }
 
-/// TODO: Implement the required processing for this.
-/// Note: if seems to currently assume results are posted to the same location
-/// as is used for status checking.
+// Get results from the specified path
+ServerMessage AegiqServerHelper::getResults(std::string &resultsGetPath) {
+  RestHeaders headers = getHeaders();
+  return client.get(resultsGetPath, "", headers);
+}
+
 // Gets results from the job and then processes into the required format
 cudaq::sample_result
 AegiqServerHelper::processResults(ServerMessage &getJobResponse,
                                   std::string &jobId) {
   CUDAQ_INFO("Processing results: {}", getJobResponse.dump());
 
+  auto resultsUrl = constructGetResultsPath(jobId);
+  auto results = getResults(resultsUrl);
+
   // Extract measurement results from the response
-  auto samplesJson = getJobResponse["results"]["counts"];
+  auto samplesJson = results["results"];
   cudaq::CountsDictionary counts;
 
+  /// TODO: Implement the required processing here!.
   for (auto &item : samplesJson.items()) {
     std::string bitstring = item.key();
     std::size_t count = item.value();
