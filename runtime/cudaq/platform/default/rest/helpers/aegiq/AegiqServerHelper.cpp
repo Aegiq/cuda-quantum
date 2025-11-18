@@ -44,11 +44,17 @@ public:
   /// @brief Extract the job id from the post response.
   std::string extractJobId(ServerMessage &postResponse) override;
 
-  /// @brief Generates the job tracking URL from the job .id
+  /// @brief Generates the job tracking URL from the job id.
   std::string constructGetJobPath(std::string &jobId) override;
 
   /// @brief Extract the job tracking URL from the post response.
   std::string constructGetJobPath(ServerMessage &postResponse) override;
+
+  /// @brief Generates the job results URL from the job id.
+  std::string constructGetResultsPath(std::string &jobId);
+
+  /// @brief Extract the job results URL from the post response.
+  std::string constructGetResultsPath(ServerMessage &postResponse);
 
   /// @brief Checks if job is completed.
   bool jobIsDone(ServerMessage &getJobResponse) override;
@@ -156,6 +162,17 @@ std::string
 AegiqServerHelper::constructGetJobPath(ServerMessage &postResponse) {
   std::string job_id = extractJobId(postResponse);
   return constructGetJobPath(job_id);
+}
+
+// Construct the results URL based on the job.
+std::string AegiqServerHelper::constructGetResultsPath(std::string &jobId) {
+  return constructGetJobPath(jobId) + "/results";
+}
+
+// Construct the results URL from the job submission response.
+std::string
+AegiqServerHelper::constructGetResultsPath(ServerMessage &postResponse) {
+  return constructGetJobPath(postResponse) + "/results";
 }
 
 // Checks whether a job is completed yet and returns.
